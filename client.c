@@ -278,9 +278,59 @@ static bool check_login(char* account,char* password,char* buffer)
 	}
 	return false;
 }
+static int find_max_id()
+{
+	if(mysql_query(mysql,"select max(player_id) from accounts;")<0)
+	{
+		fprintf(stderr,"select max(player_id) from accounts error\n");
+		return -1;
+	}
+	MYSQL_RES* res =  mysql_store_result(mysql);
+	if(res==NULL)
+	{
+		fprintf(stderr,"select max(player_id) from accounts error\n");
+		return -1;
+	}
+	MYSQL_ROW row = mysql_fetch_row(res);
+	if(row==NULL)
+	{
+		mysql_free_result(res);
+		fprintf(stderr,"select max(player_id) from accounts error\n");
+		return -1;
+	}
+	if(row[0]==NULL)
+	{
+		mysql_free_result(res);
+		fprintf(stderr,"select max(player_id) from accounts error\n");
+		return -1;
+
+	}
+	int max_id = atol(row[0]);
+	if(max_id<=0)
+	{
+		mysql_free_result(res);
+		fprintf(stderr,"select max(player_id) from accounts error\n");
+		return -1;
+	}
+	mysql_free_result(res);
+	return max_id;
+
+}
 static int register_account(char* account,char*password,char* buffer)
 {
-	//sprintf(buffer,"insert",,);
+	long max_id = find_max_id();
+	if(max_id<=0)
+	{
+		return -1;
+	}
+	sprintf(buffer,
+			"insert into accounts (register_date,account,password,player_id)"
+			" values(now(),'%s','%s',%ld);",account,password,max_id+1);
+	if(mysql_query(mysql,buffer)<0)
+	{
+		fprintf(stderr,"insert error\n");
+		return -1;
+	}
 	return 0;
 }
 static int send_login_success()
