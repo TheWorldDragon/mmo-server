@@ -13,4 +13,6 @@
 #include "util.h"
 #include "game.pb-c.h"
 #include <ctype.h>
+#include "cJSON.h"
+#include <mysql/mysql.h>
 #endif

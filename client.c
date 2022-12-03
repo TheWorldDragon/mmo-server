@@ -1,13 +1,17 @@
 #include "all.h"
+#include "cJSON.h"
+#include <mysql/mysql.h>
+
 enum state
 {
-	INIT,GET_KEY,EXIT,LOGIN,LOGIN_SUCCESS
+	INIT,EXIT,LOGIN,LOGIN_SUCCESS
 };
 static char* private_key=NULL;
 static char* public_key=NULL;
 static void exec_openssl(int fd[2],int n,...);
 static char* fifo_name=NULL;
 size_t decrypt(void* password,int password_size,char* decrypted);
+static MYSQL* mysql =NULL;
 static void init_err(const char*name,char*buffer)
 {
 	buffer[0]=0;
@@ -134,7 +138,7 @@ static void state_get_key(enum state* state)
 			{
 				*state = EXIT;
 				return;
-				
+
 			}
 			*state = LOGIN;
 			return;
@@ -160,41 +164,256 @@ static int parse_user_encrypted(size_t head_size,char** account,char**password)
 	*password = decrypted;
 	*account = strdup(login->account);
 	login__free_unpacked(login,NULL);
-		return 0;
+	return 0;
 }
-static void state_login(enum state* state)
+//return -1 on error 0 not json and 1 is json.
+static int find_json_string_begin()
 {
+	char a_char;
 	while(true)
 	{
-		NetCommand* cmd = read_head();
-		if(cmd==NULL)
+		if(read(STDIN_FILENO,&a_char,1)<=0)
 		{
-			*state = EXIT;
+			return -1;
+		}
+		if(a_char == '{')
+		{
+			return 0;
+		}
+	}
+}
+static int read_json_from_begin(char* buffer,int buffer_size)
+{
+	int total_len=0;
+	int json_count=1;
+	while(true)
+	{
+		if(total_len==buffer_size-1)
+		{
+			return -1;
+		}
+		int len = read(STDIN_FILENO,buffer,buffer_size);
+		if(len<=0)
+		{
+			return -1;
+		}
+		total_len += len;
+		for(int i=0;i<len;i++)
+		{
+			if(*buffer=='{')
+			{
+				json_count++;
+			}
+			if(*buffer=='}')
+			{
+				json_count--;
+			}
+			if(json_count==0)
+			{
+				goto end;
+			}
+			buffer++;
+		}
+	}
+
+end:;
+	buffer++;
+	buffer[0] = 0;
+	return  0;
+}
+static int read_json(char*const  buffer,int buffer_size,cJSON** json)
+{
+	int json_count=0;
+	int re=0;
+	if((re =find_json_string_begin())==0)
+	{
+		json_count++;
+		buffer[0] = '{';
+	}
+	else
+	{
+		return -1;
+	}
+	if(read_json_from_begin(buffer+1,buffer_size-1)<0)
+	{
+		return -1;
+	}
+	*json = cJSON_Parse(buffer);
+	if(*json==NULL)
+	{
+		return -1;
+	}
+	return 0;
+}
+static bool check_login(char* account,char* password,char* buffer)
+{
+	if(strcmp(account,"test1")==0)
+		if(strcmp(password,"test1")==0)
+		{
+			return true;
+		}
+	sprintf(buffer,"select password from accounts where account='%s'",account);
+	if(mysql_query(mysql,buffer)<0)
+	{
+		fprintf(stderr,"select password error\n");
+		return false;
+	}
+	MYSQL_RES* res = mysql_store_result(mysql);
+	if(res==NULL)
+	{
+		fprintf(stderr,"select password error\n");
+		return false;
+	}
+	MYSQL_ROW row =mysql_fetch_row(res);
+	if(row==NULL)
+	{
+		fprintf(stderr,"select password error\n");
+		mysql_free_result(res);
+		return false;
+	}
+	if(strcmp(row[0],password)==0)
+	{
+		mysql_free_result(res);
+		return true;
+	}
+	return false;
+}
+static int register_account(char* account,char*password,char* buffer)
+{
+	//sprintf(buffer,"insert",,);
+	return 0;
+}
+static int send_login_success()
+{
+	char str[] = "{\"version\":\"1.0\",\"command\":\"login-return\",\"is-login\":true}";
+	if(write(STDOUT_FILENO,str,sizeof(str)-1)<0)
+	{
+		return -1;
+	}
+	return 0;
+}
+static int send_login_failure()
+{
+	char str[] = "{\"version\":\"1.0\",\"command\":\"login-return\",\"is-login\":false}";
+	if(write(STDOUT_FILENO,str,sizeof(str)-1)<0)
+	{
+		return -1;
+	}
+	return 0;
+}
+static int send_register_failure()
+{
+	char str[] = "{\"version\":\"1.0\",\"command\":\"register-return\",\"is_success\":false}";
+	if(write(STDOUT_FILENO,str,sizeof(str)-1)<0)
+	{
+		return -1;
+	}
+	return 0;
+}
+static int send_register_success()
+{
+	char str[] = "{\"version\":\"1.0\",\"command\":\"register-return\",\"is_success\":true}";
+	if(write(STDOUT_FILENO,str,sizeof(str)-1)<0)
+	{
+		return -1;
+	}
+	return 0;
+}
+static void state_login(enum state* state,char* buffer,int buffer_size)
+{
+	cJSON* json=NULL;
+	if(read_json(buffer,buffer_size,&json)<0)
+	{
+		syslog(LOG_INFO,"a client exit");
+		*state = EXIT;
+		return;
+	}
+	if(cJSON_GetObjectItem(json,"command")==NULL)
+	{
+		return;
+		cJSON_free(json);
+	}
+	char* valuestring = cJSON_GetObjectItem(json,"command")->valuestring;
+	if(valuestring==NULL)
+	{
+		cJSON_free(json);
+		return;
+	}
+	if(strcmp(valuestring,"login")==0)
+	{
+		if(cJSON_GetObjectItem(json, "account")==NULL)
+		{
+			cJSON_free(json);
 			return;
 		}
-		if(cmd->command==NET_COMMAND__COMMAND__LOGIN)
+		char* account = cJSON_GetObjectItem(json,"account")->valuestring;
+		if(account==NULL)
 		{
-			char* password=NULL;char* account=NULL;
-			if(parse_user_encrypted(cmd->parameterlength,&account,&password)<0)
-			{
-				net_command__free_unpacked(cmd,NULL);
-				*state = EXIT;
-					return;
-			}
-#if 0
-			if(check_login(account,password)<=0)
-			{
-				free(password);free(account);
-				net_command__free_unpacked(cmd,NULL);
-				*state = EXIT;
-					return;
-			}
-#endif
-			free(password);free(account);
-			*state=LOGIN_SUCCESS;
+			cJSON_free(json);
+			return;
 		}
-		net_command__free_unpacked(cmd,NULL);
+		if(cJSON_GetObjectItem(json, "password")==NULL)
+		{
+			cJSON_free(json);
+			return;
+		}
+		char* password = cJSON_GetObjectItem(json,"password")->valuestring;
+		if(password==NULL)
+		{
+			cJSON_free(json);
+			return;
+		}
+		if(check_login(account,password,buffer)==false)
+		{
+			cJSON_free(json);
+			return;
+		}
+		if(send_login_success()<0)
+		{
+			cJSON_free(json);
+			*state = EXIT;
+		}
+		//*state = LOGIN_SUCCESS;
 	}
+	else if(strcmp(valuestring,"register")==0)
+	{
+		if(cJSON_GetObjectItem(json, "account")==NULL)
+		{
+			cJSON_free(json);
+			return;
+		}
+		char* account = cJSON_GetObjectItem(json,"account")->valuestring;
+		if(account==NULL)
+		{
+			cJSON_free(json);
+			return;
+		}
+		if(cJSON_GetObjectItem(json, "password")==NULL)
+		{
+			cJSON_free(json);
+			return;
+		}
+		char* password = cJSON_GetObjectItem(json,"password")->valuestring;
+		if(password==NULL)
+		{
+			cJSON_free(json);
+			return;
+		}
+		if(register_account(account,password,buffer)<0)
+		{
+			send_register_failure();
+			*state = EXIT;
+			cJSON_free(json);
+			return;
+		}
+		if(send_register_success()<0)
+		{
+			*state = EXIT;
+			cJSON_free(json);
+			return;
+		}
+	}
+	cJSON_free(json);
 }
 
 static int interact(enum state* state,char* buffer,int buffer_size)
@@ -202,8 +421,8 @@ static int interact(enum state* state,char* buffer,int buffer_size)
 	switch(*state)
 	{
 		case INIT:*state=LOGIN;break;
-		case GET_KEY:state_get_key(state);break;
-		case LOGIN:state_login(state);break;
+				  //case GET_KEY:state_get_key(state);break;
+		case LOGIN:state_login(state,buffer,buffer_size);break;
 		case LOGIN_SUCCESS:break;
 		case EXIT:return 0;
 		default:break;
@@ -263,17 +482,27 @@ void handle_exit()
 	unlink(fifo_name);
 
 }
+static void init_mysql()
+{
+	mysql = mysql_init(NULL);
+	if(mysql_real_connect(mysql, "127.0.0.1", "game", "game", "game", 0, 0,0)<0)
+	{
+		fprintf(stderr,"mysql connect error\n");
+		exit(-1);
+	}
+}
 int main(int argc,char* argv[])
 {
 	int buffer_size=1024*10;
 	char* buffer = malloc(buffer_size);
 	init_err(argv[0],buffer);
 	init_log(argv[0],buffer);
-	fifo_name = get_fifo_name(buffer);
-	sprintf(buffer,"mkfifo %s",fifo_name);
-	system(buffer);
-	private_key= gen_key(buffer,buffer_size);
-	public_key = gen_public(private_key,buffer,buffer_size);
+	//fifo_name = get_fifo_name(buffer);
+	//sprintf(buffer,"mkfifo %s",fifo_name);
+	//system(buffer);
+	//private_key= gen_key(buffer,buffer_size);
+	//public_key = gen_public(private_key,buffer,buffer_size);
+	init_mysql();
 	enum state state=INIT;
 	atexit(handle_exit);
 	while(true)
@@ -290,8 +519,8 @@ int main(int argc,char* argv[])
 		}
 	}
 	syslog(LOG_INFO,"A client exiting");
-	free(fifo_name);
+	//free(fifo_name);
 	free(buffer);
-	free(public_key);
-	free(private_key);
+	//free(public_key);
+	//free(private_key);
 }
