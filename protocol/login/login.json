@@ -1,0 +1,6 @@
+{
+    "version":"1.0",
+    "command":"login",
+    "account":"用户名",
+    "password":"密码"
+}
