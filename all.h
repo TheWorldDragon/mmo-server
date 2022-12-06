@@ -15,4 +15,7 @@
 #include <ctype.h>
 #include "cJSON.h"
 #include <mysql/mysql.h>
+#include "json.h"
+#include "command-handler.h"
+
 #endif

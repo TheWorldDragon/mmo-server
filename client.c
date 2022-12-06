@@ -335,7 +335,7 @@ static int register_account(char* account,char*password,char* buffer)
 }
 static int send_login_success()
 {
-	char str[] = "{\"version\":\"1.0\",\"command\":\"login-return\",\"is-login\":true}";
+	char str[] = "{\"version\":\"1.0\",\"command\":\"login_return\",\"is_login\":true}";
 	if(write(STDOUT_FILENO,str,sizeof(str)-1)<0)
 	{
 		return -1;
@@ -344,7 +344,7 @@ static int send_login_success()
 }
 static int send_login_failure()
 {
-	char str[] = "{\"version\":\"1.0\",\"command\":\"login-return\",\"is-login\":false}";
+	char str[] = "{\"version\":\"1.0\",\"command\":\"login_return\",\"is_login\":false}";
 	if(write(STDOUT_FILENO,str,sizeof(str)-1)<0)
 	{
 		return -1;
@@ -353,7 +353,7 @@ static int send_login_failure()
 }
 static int send_register_failure()
 {
-	char str[] = "{\"version\":\"1.0\",\"command\":\"register-return\",\"is_success\":false}";
+	char str[] = "{\"version\":\"1.0\",\"command\":\"register_return\",\"is_success\":false}";
 	if(write(STDOUT_FILENO,str,sizeof(str)-1)<0)
 	{
 		return -1;
@@ -362,7 +362,7 @@ static int send_register_failure()
 }
 static int send_register_success()
 {
-	char str[] = "{\"version\":\"1.0\",\"command\":\"register-return\",\"is_success\":true}";
+	char str[] = "{\"version\":\"1.0\",\"command\":\"register_return\",\"is_success\":true}";
 	if(write(STDOUT_FILENO,str,sizeof(str)-1)<0)
 	{
 		return -1;
@@ -393,35 +393,40 @@ static void state_login(enum state* state,char* buffer,int buffer_size)
 	{
 		if(cJSON_GetObjectItem(json, "account")==NULL)
 		{
-			cJSON_free(json);
-			return;
+			goto login_failure;
 		}
 		char* account = cJSON_GetObjectItem(json,"account")->valuestring;
 		if(account==NULL)
 		{
-			cJSON_free(json);
-			return;
+			goto login_failure;
 		}
 		if(cJSON_GetObjectItem(json, "password")==NULL)
 		{
-			cJSON_free(json);
-			return;
+			goto login_failure;
 		}
 		char* password = cJSON_GetObjectItem(json,"password")->valuestring;
 		if(password==NULL)
 		{
-			cJSON_free(json);
-			return;
+			goto login_failure;
 		}
 		if(check_login(account,password,buffer)==false)
 		{
-			cJSON_free(json);
-			return;
+			goto login_failure;
 		}
 		if(send_login_success()<0)
 		{
 			cJSON_free(json);
 			*state = EXIT;
+		}
+		if(false)
+		{
+login_failure:;
+			  send_login_failure();
+			cJSON_free(json);
+			return;
+
+
+
 		}
 		//*state = LOGIN_SUCCESS;
 	}

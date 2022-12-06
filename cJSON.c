@@ -561,8 +561,7 @@ static cJSON_bool print_number(const cJSON * const item, printbuffer * const out
     if (isnan(d) || isinf(d))
     {
         length = sprintf((char*)number_buffer, "null");
-    }
-	else if(d == (double)item->valueint)
+    } else if(d == (double)item->valueint)
 	{
 		length = sprintf((char*)number_buffer, "%d", item->valueint);
 	}

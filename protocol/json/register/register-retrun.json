@@ -1,5 +1,5 @@
 {
     "version":"1.0",
-    "command":"register-return",
+    "command":"register_return",
     "is_success":false
 }

@@ -6,7 +6,7 @@ obj:
 hinge:obj
 	clang hinge.o user-acceptor.o copy-worker.o $(lib) $(debug) -o hinge 
 client:obj
-	clang client.o util.o game.pb-c.o cJSON.o $(lib) $(debug) -o client 
+	clang client.o util.o game.pb-c.o cJSON.o json-arrive.o json.o $(lib) $(debug) -o client 
 user:obj
 	clang user.o util.o game.pb-c.o $(lib) $(debug) -o user
 
