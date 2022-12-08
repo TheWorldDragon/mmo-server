@@ -9,3 +9,5 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <setjmp.h>
+#include <assert.h>
+#include <sys/syslog.h>

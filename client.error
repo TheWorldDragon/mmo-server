@@ -1,2 +1,27 @@
 select password error
 select password error
+client: command-handler.cpp:12: json_t *command_handler_data_arrive(json_t *): Assertion `command_str!=NULL' failed.
+client: command-handler.cpp:12: json_t *command_handler_data_arrive(json_t *): Assertion `command_str!=NULL' failed.
+client: command-handler.cpp:12: json_t *command_handler_data_arrive(json_t *): Assertion `command_str!=NULL' failed.
+client: command-handler.cpp:12: json_t *command_handler_data_arrive(json_t *): Assertion `command_str!=NULL' failed.
+client: command-handler.cpp:12: json_t *command_handler_data_arrive(json_t *): Assertion `command_str!=NULL' failed.
+client: command-handler.cpp:6: json_t *command_handler_data_arrive(json_t *): Assertion `0' failed.
+client: command-handler.cpp:61: bool login(const char *, const char *): Assertion `false' failed.
+A client exit with error
+client: command-handler.cpp:61: bool login(const char *, const char *): Assertion `false' failed.
+select password error
+A client exit with error
+A client exit with error
+client: command-handler.cpp:166: json_t *command_handler_data_arrive(json_t *, MYSQL *): Assertion `return_massage!=NULL' failed.
+A client exit with error
+A client exit with error
+A client exit with error
+A client exit with error
+client: command-handler.cpp:139: cJSON *get_json_player_data(int, MYSQL *): Unexpected error: Operation not permitted.
+client: command-handler.cpp:139: cJSON *get_json_player_data(int, MYSQL *): Unexpected error: Operation not permitted.
+client: command-handler.cpp:139: cJSON *get_json_player_data(int, MYSQL *): Unexpected error: Operation not permitted.
+client: command-handler.cpp:139: cJSON *get_json_player_data(int, MYSQL *): Unexpected error: Operation not permitted.
+client: command-handler.cpp:187: int get_player_id_from_game_table(const char *, MYSQL *): Assertion `res!=nullptr' failed.
+client: command-handler.cpp:201: void store_initial_player_data(long): Assertion `fd>0' failed.
+client: command-handler.cpp:139: cJSON *get_json_player_data(int, MYSQL *): Assertion `fd>0' failed.
+client: command-handler.cpp:139: cJSON *get_json_player_data(int, MYSQL *): Assertion `fd>0' failed.

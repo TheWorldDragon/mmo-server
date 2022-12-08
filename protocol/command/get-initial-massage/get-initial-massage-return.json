@@ -1,0 +1,13 @@
+{
+    "version": 1.0,
+    "command": "get_initial_massage_return",
+    "major_task": {
+        "id": 1
+    },
+    "minor_tasks": [
+        {},
+        {},
+        {}
+    ],
+    "some_settings": "待完善"
+}

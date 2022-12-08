@@ -1,6 +1,16 @@
 {
-    "version":"1.0",
+    "version":1.0,
     "command":"login",
-    "account":"test",
-    "password":"test10"
+    "account":"test17",
+    "password":"test17"
+}
+{
+    "version":1.0,
+    "command":"get_initial_massage"
+}
+{
+    "version":1.0,
+    "command":"select_role", 
+    "role":"战",
+    "name":"哈哈"
 }

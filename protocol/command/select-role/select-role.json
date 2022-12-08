@@ -1,0 +1,6 @@
+{
+    "version":1.0,
+    "command":"select_role", 
+    "role":"战/法/弓",
+    "name":"角色的名字（有能被占用）"
+}

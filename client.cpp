@@ -1,6 +1,4 @@
-#include "all.h"
-#include "cJSON.h"
-#include <mysql/mysql.h>
+#include "all.hpp"
 
 enum state
 {
@@ -28,7 +26,7 @@ static char* gen_key(char* buf,int buf_size)
 		exit(-1);
 	}
 	buf[len]=0;
-	char* re = malloc(len+1);
+	char* re = (char*)malloc(len+1);
 	strcpy(re,buf);
 	close(fds[0]);
 	close(fds[1]);
@@ -75,6 +73,7 @@ static void init_log(char* name,char*buffer)
 {
 	openlog(strcat(strcat(buffer,"dragon-server-"),name),0,0);
 }
+#if 0
 static NetCommand* read_head()
 {
 	u_int8_t head_len=0;
@@ -154,7 +153,7 @@ static int parse_user_encrypted(size_t head_size,char** account,char**password)
 	Login* login = login__unpack(NULL,head_size,head);
 	if(login==NULL)
 		return -1;
-	char* decrypted =  malloc(1024);
+	char* decrypted =  (char*)malloc(1024);
 	int decrypted_len = decrypt( login->password.data,login->password.len,decrypted);
 	if(decrypted<=0)
 	{
@@ -245,6 +244,7 @@ static int read_json(char*const  buffer,int buffer_size,cJSON** json)
 	}
 	return 0;
 }
+#endif
 static bool check_login(char* account,char* password,char* buffer)
 {
 	if(strcmp(account,"test1")==0)
@@ -333,6 +333,7 @@ static int register_account(char* account,char*password,char* buffer)
 	}
 	return 0;
 }
+#if 0
 static int send_login_success()
 {
 	char str[] = "{\"version\":\"1.0\",\"command\":\"login_return\",\"is_login\":true}";
@@ -389,6 +390,13 @@ static void state_login(enum state* state,char* buffer,int buffer_size)
 		cJSON_free(json);
 		return;
 	}
+	if(false)
+	{
+login_failure:;
+			  send_login_failure();
+			  cJSON_free(json);
+			  return;
+	}
 	if(strcmp(valuestring,"login")==0)
 	{
 		if(cJSON_GetObjectItem(json, "account")==NULL)
@@ -417,16 +425,6 @@ static void state_login(enum state* state,char* buffer,int buffer_size)
 		{
 			cJSON_free(json);
 			*state = EXIT;
-		}
-		if(false)
-		{
-login_failure:;
-			  send_login_failure();
-			cJSON_free(json);
-			return;
-
-
-
 		}
 		//*state = LOGIN_SUCCESS;
 	}
@@ -484,6 +482,141 @@ static int interact(enum state* state,char* buffer,int buffer_size)
 	}
 	return 1;
 }
+#endif
+//read from stdin 
+//return -1 on error
+using namespace std;
+static char* read_json_string()
+{
+	queue<char> q = queue<char>();
+	int count=0;
+	char a;
+	int re;
+	while(true)
+	{
+		re = fgetc(stdin);
+		if(re<0)
+		{
+			return NULL;
+		}
+		if(re=='{')
+		{
+			break;
+		}
+	}
+	q.push('{');
+	count=1;
+	while(count>0)
+	{
+		re=fgetc(stdin);
+		if(re<0)
+		{
+			return NULL;
+		}
+		if(re=='{')
+		{
+			count++;
+		}
+		else if(re=='}')
+		{
+			count--;
+		}
+		q.push(re);
+		if(count==0)
+		{
+			break;
+		}
+	}
+	int size = q.size();
+	char* str = (char*)malloc(size+1);
+
+	for(int i=0;i<size;i++)
+	{
+		str[i] = q.front();
+		q.pop();
+	}
+	str[size]=0;
+	return str;
+}
+static bool check_json_string(char* json_string)
+{
+	cJSON* cjson = cJSON_Parse(json_string);
+	if(cjson==NULL)
+	{
+		return false;
+	}
+	cJSON* version = cJSON_GetObjectItem(cjson,"version");
+	if(version==NULL)
+	{
+		return false;
+	}
+	if(cJSON_IsNumber(version)==false)
+	{
+		return false;
+	}
+	cJSON* command = cJSON_GetObjectItem(cjson,"command");
+	if(command==NULL)
+	{
+		return false;
+	}
+	if(cJSON_IsString(command)==false)
+	{
+		return false;
+	}
+	cJSON_free(cjson);
+	return true;
+}
+static int interact(char* buf,int size)
+{
+	while(true)
+	{
+
+		cJSON* cjson = NULL;
+		char* json_string = NULL;
+		if((json_string=read_json_string())==NULL)
+		{
+			json_string = (char*)"{\"version\":1.0,\"command\":\"exit\"}";
+		}
+
+		if(check_json_string(json_string)==false)
+
+		{
+			free(json_string);
+			continue;
+		}
+		json_t* json = new json_t(json_string);
+		json_t* re_json = NULL;
+		bool is_need_return=true;
+		try
+		{
+			re_json = command_handler_data_arrive(json,mysql);
+		}
+		catch(int error)
+		{
+			if(error==NORMAL_EXIT_EXCEPTION)
+			{
+				delete json;
+				return 0;
+			}
+			else if (error==INVALID_RESULT_EXCEPTION)
+			{
+				is_need_return=false;
+			}
+			else
+				assert(false);
+		}
+		if(is_need_return)
+		{
+			char* re_str = re_json->get_string();
+			write(STDOUT_FILENO,re_str,strlen(re_str));
+			free(re_str);
+		}
+		delete re_json;
+		delete json;
+		free(json_string);
+	}
+		return 0;
+}
 char* gen_public(char* private_key,char* buffer,int buffer_size)
 {
 	int fds[2];
@@ -501,7 +634,7 @@ char* gen_public(char* private_key,char* buffer,int buffer_size)
 	}
 	buffer[len]=0;
 	len = strlen(buffer);
-	char* re = malloc(len+1);
+	char* re = (char*)malloc(len+1);
 	strcpy(re,buffer);
 	close(fds[0]);
 	close(fds[1]);
@@ -527,7 +660,7 @@ char* get_fifo_name(char* buffer)
 {
 	sprintf(buffer,"%d.fifo",getpid());
 	int len = strlen(buffer);
-	char* re = malloc(len+1);
+	char* re = (char*)malloc(len+1);
 	strcpy(re,buffer);
 	return re;
 }
@@ -540,7 +673,8 @@ void handle_exit()
 static void init_mysql()
 {
 	mysql = mysql_init(NULL);
-	if(mysql_real_connect(mysql, "127.0.0.1", "game", "game", "game", 0, 0,0)<0)
+	if(mysql_real_connect(mysql,
+				"127.0.0.1", "game", "game", "game", 0, 0,0)==NULL)
 	{
 		fprintf(stderr,"mysql connect error\n");
 		exit(-1);
@@ -549,7 +683,7 @@ static void init_mysql()
 int main(int argc,char* argv[])
 {
 	int buffer_size=1024*10;
-	char* buffer = malloc(buffer_size);
+	char* buffer = (char*)malloc(buffer_size);
 	init_err(argv[0],buffer);
 	init_log(argv[0],buffer);
 	//fifo_name = get_fifo_name(buffer);
@@ -558,20 +692,12 @@ int main(int argc,char* argv[])
 	//private_key= gen_key(buffer,buffer_size);
 	//public_key = gen_public(private_key,buffer,buffer_size);
 	init_mysql();
-	enum state state=INIT;
+	//enum state state=INIT;
 	atexit(handle_exit);
-	while(true)
+	int re = interact(buffer,buffer_size);
+	if(re<0)
 	{
-		int re = interact(&state,buffer,buffer_size);
-		if(re<0)
-		{
-			fprintf(stderr,"A client exit with error\n");
-			break;
-		}
-		else if(re==0)
-		{
-			break;
-		}
+		fprintf(stderr,"A client exit with error\n");
 	}
 	syslog(LOG_INFO,"A client exiting");
 	//free(fifo_name);

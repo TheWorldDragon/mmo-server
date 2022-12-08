@@ -5,8 +5,6 @@ typedef struct json json_t;
 enum 
 {
 	INVALID_REQUEST_EXCEPTION=1,
-
 };
-json_t* command_handler_data_arrive(json_t* massage,
-		jmp_buf exception);
+json_t* command_handler_data_arrive(json_t* massage, jmp_buf exception);
 #endif
