@@ -1,6 +1,5 @@
 {
-    "version":1.0,
-    "command":"select_role", 
+    "cmd":"select_role", 
     "role":"战/法/弓",
-    "name":"角色的名字（有能被占用）"
+    "name":"角色的名字（名字可以重复,但后继应该要进行名字检查）"
 }

@@ -214,7 +214,7 @@ json_t* command_handler_data_arrive(json_t* massage,MYSQL*mysql)
 	char* json_str = massage->get_string();
 	cJSON* cjson = cJSON_Parse(json_str);
 	assert(cjson!=NULL);
-	cJSON* command_str= cJSON_GetObjectItem(cjson,"command");
+	cJSON* command_str= cJSON_GetObjectItem(cjson,"cmd");
 	assert(command_str!=NULL);
 	//------------------------------------start state
 	static int player_id=0;
@@ -229,13 +229,13 @@ json_t* command_handler_data_arrive(json_t* massage,MYSQL*mysql)
 		char* password = cJSON_GetObjectItem(cjson,"password")->valuestring;
 		if(login(mysql,account,password))
 		{
-			return_massage = new json_t("{\"version\":1.0,\"command\":\"login_return\",\"is_login\":true}");
+			return_massage = new json_t("{\"cmd\":\"login_return\",\"is_login\":true}");
 			state = USER_GET_INITIAL_MSG;
 			player_id = get_player_id(mysql,account);
 		}
 		else
 		{
-			return_massage = new json_t("{\"version\":1.0,\"command\":\"login_return\",\"is_login\":false}");
+			return_massage = new json_t("{\"cmd\":\"login_return\",\"is_login\":false}");
 		}
 
 	}
@@ -248,11 +248,11 @@ json_t* command_handler_data_arrive(json_t* massage,MYSQL*mysql)
 		char* tmp_buf = (char*)malloc(1024*2);
 		if(register_account(mysql,account,password,tmp_buf)<0)
 		{
-			return_massage = new json_t("{\"version\":1.0,\"command\":\"register_return\",\"is_success\":false}");
+			return_massage = new json_t("{\"cmd\":\"register_return\",\"is_success\":false}");
 		}
 		else
 		{
-			return_massage = new json_t("{\"version\":1.0,\"command\":\"register_return\",\"is_success\":true}");
+			return_massage = new json_t("{\"cmd\":\"register_return\",\"is_success\":true}");
 			int tmp_id =get_player_id_from_game_table(account,mysql);
 			store_initial_player_data(tmp_id);
 		}
@@ -265,7 +265,7 @@ json_t* command_handler_data_arrive(json_t* massage,MYSQL*mysql)
 		int major_version = get_major_version(player_data);
 		major_version_id = major_version;
 		char* buf = (typeof(buf))malloc(1024);
-		sprintf(buf,"{ \"version\": 1.0, \"command\": \"get_initial_massage_return\","
+		sprintf(buf,"{\"cmd\":\"get_initial_massage_return\","
 				" \"major_task\": { \"id\": %d }, \"minor_tasks\": [ {}, {}, {} ],"
 				" \"some_settings\": \"待完善\" }"	,major_version);
 		cJSON_free(player_data);
@@ -293,27 +293,27 @@ json_t* command_handler_data_arrive(json_t* massage,MYSQL*mysql)
 			goto invalid;
 		if(name->valuestring==nullptr)
 			goto invalid;
-		if(memcmp(role->valuestring,zhan,sizeof(zhan)))
+		if(memcmp(role->valuestring,zhan,sizeof(zhan))==0)
 		{
 			store_role(player_id,zhan,name->valuestring,mysql);
-			return_massage = new json_t("{\"version\":1.0,\"command\":\"select_role_return\","
+			return_massage = new json_t("{\"cmd\":\"select_role_return\","
 					"\"is_success\":true,\"failure_reason\":\"\"}");
 		}
-		else if(memcmp(role->valuestring,fa,sizeof(fa)))
+		else if(memcmp(role->valuestring,fa,sizeof(fa))==0)
 		{
 			store_role(player_id,fa,name->valuestring,mysql);
-			return_massage = new json_t("{\"version\":1.0,\"command\":\"select_role_return\","
+			return_massage = new json_t("{\"cmd\":\"select_role_return\","
 					"\"is_success\":true,\"failure_reason\":\"\"}");
 		}
-		else if(memcmp(role->valuestring,gong,sizeof(gong)))
+		else if(memcmp(role->valuestring,gong,sizeof(gong))==0)
 		{
 			store_role(player_id,gong,name->valuestring,mysql);
-			return_massage = new json_t("{\"version\":1.0,\"command\":\"select_role_return\","
+			return_massage = new json_t("{\"cmd\":\"select_role_return\","
 					"\"is_success\":true,\"failure_reason\":\"\"}");
 		}
 		else
 		{
-			return_massage = new json_t("{\"version\":1.0,\"command\":\"select_role_return\","
+			return_massage = new json_t("{\"cmd\":\"select_role_return\","
 					"\"is_success\":false,\"failure_reason\":\"无效角色\"}");
 		}
 	}

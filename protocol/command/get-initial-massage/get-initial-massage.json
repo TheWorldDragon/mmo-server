@@ -1,4 +1,3 @@
 {
-    "version":1.0,
-    "command":"get_initial_massage"
+    "cmd":"get_initial_massage"
 }

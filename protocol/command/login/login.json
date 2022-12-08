@@ -1,6 +1,5 @@
 {
-    "version":1.0,
-    "command":"login",
+    "cmd":"login",
     "account":"用户名",
     "password":"密码"
 }

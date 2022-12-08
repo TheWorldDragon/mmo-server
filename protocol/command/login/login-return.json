@@ -1,5 +1,4 @@
 {
-    "version":1.0,
-    "command":"login_return",
+    "cmd":"login_return",
     "is_login":false 
 }

@@ -1,16 +1,13 @@
 {
-    "version":1.0,
-    "command":"login",
-    "account":"test17",
-    "password":"test17"
+    "cmd":"login",
+    "account":"test20",
+    "password":"test20"
 }
 {
-    "version":1.0,
-    "command":"get_initial_massage"
+	"cmd":"get_initial_massage"
 }
 {
-    "version":1.0,
-    "command":"select_role", 
+    "cmd":"select_role", 
     "role":"战",
-    "name":"哈哈"
+    "name":"涉及到封建"
 }

@@ -1,6 +1,5 @@
 {
-    "version":1.0,
-    "command":"select_role_return",
+    "cmd":"select_role_return",
     "is_success":false,
     "failure_reason":"无效角色/原因待完善 (当is_success==true时应该忽略)"
 }

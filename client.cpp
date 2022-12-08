@@ -333,156 +333,6 @@ static int register_account(char* account,char*password,char* buffer)
 	}
 	return 0;
 }
-#if 0
-static int send_login_success()
-{
-	char str[] = "{\"version\":\"1.0\",\"command\":\"login_return\",\"is_login\":true}";
-	if(write(STDOUT_FILENO,str,sizeof(str)-1)<0)
-	{
-		return -1;
-	}
-	return 0;
-}
-static int send_login_failure()
-{
-	char str[] = "{\"version\":\"1.0\",\"command\":\"login_return\",\"is_login\":false}";
-	if(write(STDOUT_FILENO,str,sizeof(str)-1)<0)
-	{
-		return -1;
-	}
-	return 0;
-}
-static int send_register_failure()
-{
-	char str[] = "{\"version\":\"1.0\",\"command\":\"register_return\",\"is_success\":false}";
-	if(write(STDOUT_FILENO,str,sizeof(str)-1)<0)
-	{
-		return -1;
-	}
-	return 0;
-}
-static int send_register_success()
-{
-	char str[] = "{\"version\":\"1.0\",\"command\":\"register_return\",\"is_success\":true}";
-	if(write(STDOUT_FILENO,str,sizeof(str)-1)<0)
-	{
-		return -1;
-	}
-	return 0;
-}
-static void state_login(enum state* state,char* buffer,int buffer_size)
-{
-	cJSON* json=NULL;
-	if(read_json(buffer,buffer_size,&json)<0)
-	{
-		syslog(LOG_INFO,"a client exit");
-		*state = EXIT;
-		return;
-	}
-	if(cJSON_GetObjectItem(json,"command")==NULL)
-	{
-		return;
-		cJSON_free(json);
-	}
-	char* valuestring = cJSON_GetObjectItem(json,"command")->valuestring;
-	if(valuestring==NULL)
-	{
-		cJSON_free(json);
-		return;
-	}
-	if(false)
-	{
-login_failure:;
-			  send_login_failure();
-			  cJSON_free(json);
-			  return;
-	}
-	if(strcmp(valuestring,"login")==0)
-	{
-		if(cJSON_GetObjectItem(json, "account")==NULL)
-		{
-			goto login_failure;
-		}
-		char* account = cJSON_GetObjectItem(json,"account")->valuestring;
-		if(account==NULL)
-		{
-			goto login_failure;
-		}
-		if(cJSON_GetObjectItem(json, "password")==NULL)
-		{
-			goto login_failure;
-		}
-		char* password = cJSON_GetObjectItem(json,"password")->valuestring;
-		if(password==NULL)
-		{
-			goto login_failure;
-		}
-		if(check_login(account,password,buffer)==false)
-		{
-			goto login_failure;
-		}
-		if(send_login_success()<0)
-		{
-			cJSON_free(json);
-			*state = EXIT;
-		}
-		//*state = LOGIN_SUCCESS;
-	}
-	else if(strcmp(valuestring,"register")==0)
-	{
-		if(cJSON_GetObjectItem(json, "account")==NULL)
-		{
-			cJSON_free(json);
-			return;
-		}
-		char* account = cJSON_GetObjectItem(json,"account")->valuestring;
-		if(account==NULL)
-		{
-			cJSON_free(json);
-			return;
-		}
-		if(cJSON_GetObjectItem(json, "password")==NULL)
-		{
-			cJSON_free(json);
-			return;
-		}
-		char* password = cJSON_GetObjectItem(json,"password")->valuestring;
-		if(password==NULL)
-		{
-			cJSON_free(json);
-			return;
-		}
-		if(register_account(account,password,buffer)<0)
-		{
-			send_register_failure();
-			*state = EXIT;
-			cJSON_free(json);
-			return;
-		}
-		if(send_register_success()<0)
-		{
-			*state = EXIT;
-			cJSON_free(json);
-			return;
-		}
-	}
-	cJSON_free(json);
-}
-
-static int interact(enum state* state,char* buffer,int buffer_size)
-{
-	switch(*state)
-	{
-		case INIT:*state=LOGIN;break;
-				  //case GET_KEY:state_get_key(state);break;
-		case LOGIN:state_login(state,buffer,buffer_size);break;
-		case LOGIN_SUCCESS:break;
-		case EXIT:return 0;
-		default:break;
-	}
-	return 1;
-}
-#endif
 //read from stdin 
 //return -1 on error
 using namespace std;
@@ -545,16 +395,7 @@ static bool check_json_string(char* json_string)
 	{
 		return false;
 	}
-	cJSON* version = cJSON_GetObjectItem(cjson,"version");
-	if(version==NULL)
-	{
-		return false;
-	}
-	if(cJSON_IsNumber(version)==false)
-	{
-		return false;
-	}
-	cJSON* command = cJSON_GetObjectItem(cjson,"command");
+	cJSON* command = cJSON_GetObjectItem(cjson,"cmd");
 	if(command==NULL)
 	{
 		return false;
@@ -575,7 +416,7 @@ static int interact(char* buf,int size)
 		char* json_string = NULL;
 		if((json_string=read_json_string())==NULL)
 		{
-			json_string = (char*)"{\"version\":1.0,\"command\":\"exit\"}";
+			json_string = (char*)"{\"cmd\":\"exit\"}";
 		}
 
 		if(check_json_string(json_string)==false)
@@ -705,3 +546,153 @@ int main(int argc,char* argv[])
 	//free(public_key);
 	//free(private_key);
 }
+#if 0
+static int send_login_success()
+{
+	char str[] = "{\"version\":\"1.0\",\"command\":\"login_return\",\"is_login\":true}";
+	if(write(STDOUT_FILENO,str,sizeof(str)-1)<0)
+	{
+		return -1;
+	}
+	return 0;
+}
+static int send_login_failure()
+{
+	char str[] = "{\"version\":\"1.0\",\"command\":\"login_return\",\"is_login\":false}";
+	if(write(STDOUT_FILENO,str,sizeof(str)-1)<0)
+	{
+		return -1;
+	}
+	return 0;
+}
+static int send_register_failure()
+{
+	char str[] = "{\"version\":\"1.0\",\"command\":\"register_return\",\"is_success\":false}";
+	if(write(STDOUT_FILENO,str,sizeof(str)-1)<0)
+	{
+		return -1;
+	}
+	return 0;
+}
+static int send_register_success()
+{
+	char str[] = "{\"version\":\"1.0\",\"command\":\"register_return\",\"is_success\":true}";
+	if(write(STDOUT_FILENO,str,sizeof(str)-1)<0)
+	{
+		return -1;
+	}
+	return 0;
+}
+static void state_login(enum state* state,char* buffer,int buffer_size)
+{
+	cJSON* json=NULL;
+	if(read_json(buffer,buffer_size,&json)<0)
+	{
+		syslog(LOG_INFO,"a client exit");
+		*state = EXIT;
+		return;
+	}
+	if(cJSON_GetObjectItem(json,"cmd")==NULL)
+	{
+		return;
+		cJSON_free(json);
+	}
+	char* valuestring = cJSON_GetObjectItem(json,"cmd")->valuestring;
+	if(valuestring==NULL)
+	{
+		cJSON_free(json);
+		return;
+	}
+	if(false)
+	{
+login_failure:;
+			  send_login_failure();
+			  cJSON_free(json);
+			  return;
+	}
+	if(strcmp(valuestring,"login")==0)
+	{
+		if(cJSON_GetObjectItem(json, "account")==NULL)
+		{
+			goto login_failure;
+		}
+		char* account = cJSON_GetObjectItem(json,"account")->valuestring;
+		if(account==NULL)
+		{
+			goto login_failure;
+		}
+		if(cJSON_GetObjectItem(json, "password")==NULL)
+		{
+			goto login_failure;
+		}
+		char* password = cJSON_GetObjectItem(json,"password")->valuestring;
+		if(password==NULL)
+		{
+			goto login_failure;
+		}
+		if(check_login(account,password,buffer)==false)
+		{
+			goto login_failure;
+		}
+		if(send_login_success()<0)
+		{
+			cJSON_free(json);
+			*state = EXIT;
+		}
+		//*state = LOGIN_SUCCESS;
+	}
+	else if(strcmp(valuestring,"register")==0)
+	{
+		if(cJSON_GetObjectItem(json, "account")==NULL)
+		{
+			cJSON_free(json);
+			return;
+		}
+		char* account = cJSON_GetObjectItem(json,"account")->valuestring;
+		if(account==NULL)
+		{
+			cJSON_free(json);
+			return;
+		}
+		if(cJSON_GetObjectItem(json, "password")==NULL)
+		{
+			cJSON_free(json);
+			return;
+		}
+		char* password = cJSON_GetObjectItem(json,"password")->valuestring;
+		if(password==NULL)
+		{
+			cJSON_free(json);
+			return;
+		}
+		if(register_account(account,password,buffer)<0)
+		{
+			send_register_failure();
+			*state = EXIT;
+			cJSON_free(json);
+			return;
+		}
+		if(send_register_success()<0)
+		{
+			*state = EXIT;
+			cJSON_free(json);
+			return;
+		}
+	}
+	cJSON_free(json);
+}
+
+static int interact(enum state* state,char* buffer,int buffer_size)
+{
+	switch(*state)
+	{
+		case INIT:*state=LOGIN;break;
+				  //case GET_KEY:state_get_key(state);break;
+		case LOGIN:state_login(state,buffer,buffer_size);break;
+		case LOGIN_SUCCESS:break;
+		case EXIT:return 0;
+		default:break;
+	}
+	return 1;
+}
+#endif

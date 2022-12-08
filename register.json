@@ -1,6 +1,5 @@
 {
-    "version":1.0,
-    "command":"register",
-    "account":"test17",
-    "password":"test17"
+    "cmd":"register",
+    "account":"test20",
+    "password":"test20"
 }
