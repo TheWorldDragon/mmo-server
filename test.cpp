@@ -1,6 +1,7 @@
 #include "all.hpp"
 int main()
 {
+#if 0
 	game_map_t g = game_map_t("test.obj");
 	int a=1;
 	for(int x=-(g.x_len);x<=g.x_len;x++)
@@ -15,4 +16,5 @@ int main()
 		}
 		printf("\n");
 	}
+#endif
 }

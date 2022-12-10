@@ -8,6 +8,7 @@
 #include "vector3.hpp"
 #include "array3.hpp"
 #include "game-map.hpp"
+#include "bool-space.hpp"
 extern "C"
 {
 
