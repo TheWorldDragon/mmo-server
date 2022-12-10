@@ -5,7 +5,9 @@
 #include "command-handler.hpp"
 #include "cJSON.h"
 #include <mysql/mysql.h>
-#include <queue>
+#include "vector3.hpp"
+#include "array3.hpp"
+#include "game-map.hpp"
 extern "C"
 {
 

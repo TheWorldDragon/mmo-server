@@ -1,4 +1,19 @@
 #ifndef STD_HPP
 #define STD_HPP
-#include "std.h"
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <string.h>
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <setjmp.h>
+#include <assert.h>
+#include <sys/syslog.h>
+#include <queue>
 #endif
