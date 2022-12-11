@@ -7,7 +7,11 @@ static bool*** allocate_3d(int max_x,int max_y,int max_z)
 		bool_map1[i] = new bool*[max_y];
 		for(int j=0;j<max_y;j++)
 		{
-			bool_map1[i][j] = new bool[max_z];
+			bool* a =  new bool[max_z];
+			for(int k=0;k<max_z;k++)
+				a[k] =false;
+			bool_map1[i][j] =a ;
+
 		}
 	}
 	return bool_map1;

@@ -16,4 +16,5 @@
 #include <assert.h>
 #include <sys/syslog.h>
 #include <queue>
+#include <vector>
 #endif

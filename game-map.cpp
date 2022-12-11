@@ -8,6 +8,7 @@ static void build_true(vector<vector3_t>* v,vector<vector3_t>* vn,const char* ob
 
 
 }
+#if 0
 bool game_map_t::has_cube(int x, int y, int z)
 {
 	if(x>0 && y >0 && z > 0)//1
@@ -53,6 +54,7 @@ bool game_map_t::has_cube(int x, int y, int z)
 	else //row point
 		assert(false);
 }
+#endif
 static vector<vector3_t>* get_points_by_this_line(vector<vector3_t>* v, char* line)
 {
 	if(*line!='f')
@@ -135,6 +137,7 @@ static bool is_in_object(vector<vector3_t*>* fa_vec,
 	}
 	return is_in;
 }
+#if 0
 void set_true(array3_t<bool*>* view[8],int x,int y, int z)
 {
 	if(x>0 && y >0 && z > 0)//1
@@ -181,44 +184,59 @@ void set_true(array3_t<bool*>* view[8],int x,int y, int z)
 	{
 	}
 }
-game_map_t::game_map_t(const char* obj_file_name)
+#endif
+static vector<vector3_t>* load_obj_file_v(const char* obj_str)
 {
-	vector<vector3_t>* v =  vector3_t::load_obj_file_v(obj_file_name);
-	vector<vector3_t>* vn =  vector3_t::load_obj_file_vn(obj_file_name);
-	int max_x=0,max_y=0,max_z=0;
-	for(auto it = v->begin();it!=v->end();++it)
+	const char* p = obj_str;
+	vector<vector3_t>* vec = new vector<vector3_t>();
+	while(true)
 	{
-		if(it->x>max_x)
+		if(*p=='v' && p[1]==' ')
 		{
-			max_x = it->x;
+			p++;
+			float x,y,z;
+			sscanf(p,"%f %f %f",&x,&y,&z);
+			vector3_t point  = (vector3_t){.x=x,.y=y,.z=z};
+			vec->push_back(point);
+			while(*p!='\n')
+				p++;
 		}
-		if(it->y>max_y)
-		{
-			max_y = it->y;
-		}
-		if(it->z>max_z)
-		{
-			max_z = it->z;
-		}
+		else if(*p=='\0')
+			break;
+		else
+			p++;
+
 	}
-	int m = max(max(max_x,max_y),max_z);
-	max_x = m;max_y = m; max_z = m;
-	x_len = max_x;
-	y_len = max_y;
-	z_len  = max_z;
-	for(int i=0;i<8;i++)
+	return vec;
+}
+static vector<vector3_t>* load_obj_file_vn(const char* obj_str)
+{
+	const char* p = obj_str;
+	vector<vector3_t>* vec = new vector<vector3_t>();
+	while(true)
 	{
-			usleep(1000);
-		view[i] = new array3_t<bool*>(max_x,max_y,max_z);
-		for(int x=0;x<x_len;x++)
-			for(int y=0;y<y_len;y++)
-				for(int z=0;z<z_len;z++)
-				{
-					view[i]->set(x,y,z,new bool(false));
-				}
+		if(*p=='v' && p[1]=='n')
+		{
+			p++;
+			p++;
+			float x,y,z;
+			sscanf(p,"%f %f %f",&x,&y,&z);
+			vector3_t point  = (vector3_t){.x=x,.y=y,.z=z};
+			vec->push_back(point);
+			while(*p!='\n')
+				p++;
+		}
+		else if(*p=='\0')
+			break;
+		else
+			p++;
+
 	}
-	//--------------build true
-	int obj_fd = open(obj_file_name,O_RDONLY);
+	return vec;
+}
+char* load_file(const char* name)
+{
+	int obj_fd = open(name,O_RDONLY);
 	assert(obj_fd>=0);
 	size_t size = lseek(obj_fd,0,SEEK_END);
 	lseek(obj_fd,0,SEEK_SET);
@@ -226,9 +244,143 @@ game_map_t::game_map_t(const char* obj_file_name)
 	assert(read(obj_fd,buf,size)==size);
 	close(obj_fd);
 	buf[size] = 0;
-	char* p =buf;
+	return buf;
+}
+static vector<vector3_t>* get_points_lines(vector<vector3_t>* v,char* obj_str)
+{
+	vector<vector3_t>* re = new vector<vector3_t>();
+	assert(*obj_str=='f');
+	while (*obj_str=='f')
+	{
+		obj_str+=2;
+		char* end = strchr(obj_str,'/');
+		int len = end-obj_str;
+		char buf[len+1];
+		buf[len] =0;
+		memcpy(buf,obj_str,len);
+		long id = atol(buf);
+		assert(id>0);
+		re->push_back( v->at(id-1));
+		char* next = nullptr;
+		if((next =strchr(obj_str,'\n'))!=nullptr)
+		{
+			obj_str = next;
+			obj_str++;
+		}
+		else if((next=strchr(obj_str,0))!=nullptr)
+		{
+			return re;
+		}
+		else{assert(false);}
+	}
+	return re;
+
+
+}
+vector<vector3_t>* get_fa_lines(vector<vector3_t>* vn, char* obj_str)
+{
+	vector<vector3_t>* re = new vector<vector3_t>;
+	assert(*obj_str=='f');
+	while (*obj_str=='f')
+	{
+		obj_str =  strchr(obj_str,'/');
+		obj_str++;
+		obj_str =  strchr(obj_str,'/');
+		obj_str++;
+		char* end = strchr(obj_str,'/');
+		int len = end-obj_str;
+		char buf[len+1];
+		buf[len] =0;
+		memcpy(buf,obj_str,len);
+		long id = atol(buf);
+		assert(id>0);
+		re->push_back( vn->at(id-1));
+		char* next = nullptr;
+		if((next =strchr(obj_str,'\n'))!=nullptr)
+		{
+			obj_str = next;
+			obj_str++;
+		}
+		else if((next=strchr(obj_str,0))!=nullptr)
+		{
+			return re;
+		}
+		else{assert(false);}
+	}
+	return re;
+}
+bool is_in_object2(vector<vector3_t>* fa_lines,vector<vector3_t>* first_point_lines,int x,int y,int z)
+{
+	int times = first_point_lines->size();
+	bool is_in = true;
+	for(int i=0;i<times;i++)
+	{
+		int id = i+1;
+		vector3_t fa = fa_lines->at(i);
+		const vector3_t point = first_point_lines->at(i);
+		vector3_t v = {.x=point.x -x,.y=point.y-y,.z=point.z-z};
+		float a = v*fa;
+		if(a<0)
+		{
+			is_in=false;
+		break;
+		}
+	}
+	return is_in;
+}
+void  set_true(bool_space_t* bool_space,int x,int y,int z)
+{
+	assert(x!=0 && y!=0 && z!=0);
+	int a1 = x/abs(x),a2 = y/abs(y),a3 = z/abs(z);
+	x = abs(x);y = abs(y);z = abs(z);
+	bool_space->set(a1*(x),a2*y,a3*z,true);
+	bool_space->set(a1*(x+1),a2*y,a3*z,true);
+	bool_space->set(a1*x,a2*(y+1),a3*z,true);
+	bool_space->set(a1*(x+1),a2*(y+1),a3*z,true);
+	bool_space->set(a1*x,a2*y,a3*(z+1),true);
+	bool_space->set(a1*(x+1),a2*y,a3*(z+1),true);
+	bool_space->set(a1*x,a2*(y+1),a3*(z+1),true);
+}
+game_map_t::game_map_t(const char* obj_file_name)
+{
+	char*const  obj_str = load_file(obj_file_name);
+	vector<vector3_t>* v =  load_obj_file_v(obj_str);
+	vector<vector3_t>* vn =  load_obj_file_vn(obj_str);
+	int max_x=0,max_y=0,max_z=0;
+	for(auto it = v->begin();it!=v->end();++it)
+	{
+		if(abs(it->x)>max_x)
+		{
+			max_x = abs(it->x);
+		}
+		if(abs(it->y)>max_y)
+		{
+			max_y = abs(it->y);
+		}
+		if(abs(it->z)>max_z)
+		{
+			max_z = abs(it->z);
+		}
+	}
+	//int m = max(max(max_x,max_y),max_z);
+	//max_x = m;max_y = m; max_z = m;
+	x_len = max_x;
+	y_len = max_y;
+	z_len  = max_z;
+	bool_space = new bool_space_t(x_len,y_len,z_len);
+	//--------------build true
+	char* p =obj_str;
 	while((p = strchr(p,'f'))!=nullptr)
 	{
+		if(p[1]=='f')
+		{
+			p+=2;
+			continue;
+		}
+		vector<vector3_t>* first_point_lines = get_points_lines(v,p);
+		vector<vector3_t>* fa_lines = get_fa_lines(vn,p);
+		assert(first_point_lines->size()==fa_lines->size());
+#if 0
 		vector<vector3_t>* points=nullptr;
 		vector3_t* fa = nullptr;
 		vector<typeof(points)>* point_vec = new vector<typeof(points)>();
@@ -241,6 +393,31 @@ game_map_t::game_map_t(const char* obj_file_name)
 			p = next_line(p);
 		}
 		assert(fa_vec->size()==point_vec->size());
+#endif
+		this->print(1);
+		//printf("-------------------------------------\n");
+		for(int x=-(x_len-1);x<=x_len-1;x++)
+		{
+			if(x==0)
+				continue;
+			for(int y=-(y_len-1);y<=(y_len-1);y++)
+			{
+				if(y==0)
+					continue;
+				for(int z=-(z_len-1);z<=z_len-1;z++)
+				{
+					if(z==0)
+						continue;
+					if(is_in_object2(fa_lines,first_point_lines,x,y,z))
+					{
+						//printf("%d\n",x);
+						set_true(bool_space,x,y,z);//8
+
+					}
+				}
+			}
+		}
+#if 0
 		int max_len = x_len-1;
 		for(int x = -max_len;x<=max_len;x++)
 			for(int y = -max_len;y<=max_len;y++)
@@ -262,25 +439,41 @@ game_map_t::game_map_t(const char* obj_file_name)
 
 		delete point_vec;
 		delete fa_vec;
+#endif	
+		delete first_point_lines;
+		delete fa_lines;
+		while(true)
+		{
+			if(p[0]=='\n')
+			{
+				if(p[1]!='f')
+					break;
+			}
+		p++;
+		}
 	}
-
-	free(buf);
-
-	//-----------------------------
-
+	free(obj_str);
 	delete v;
 	delete vn;
 }
+void game_map_t::print(int z)
+{
+	assert(z!=0 && abs(z)<=z_len);
+	printf("(max_x = %d,max_y=%d,max_z=%d && z=%d)\n",x_len,y_len,z_len,z);
+	for(int y = -(y_len);y<=y_len;y++)
+	{
+		if(y==0)
+			continue;
+		for(int x = -(x_len);x<=x_len;x++)
+		{
+			if(x==0)
+				continue;
+			printf("%d",bool_space->get(x,y,z));
+		}
+		printf("\n");
+	}
+}
 game_map_t::~game_map_t()
 {
-	for(int i=0;i<8;i++)
-	{
-		for(int x=0;x<x_len;x++)
-			for(int y=0;y<y_len;y++)
-				for(int z=0;z<z_len;z++)
-				{
-					delete view[i]->get(x,y,z);
-				}
-		delete view[i];
-	}
+	delete bool_space;
 }
