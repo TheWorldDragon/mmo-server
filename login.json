@@ -1,7 +1,7 @@
 {
     "cmd":"login",
-    "account":"test20",
-    "password":"test20"
+    "account":"test21",
+    "password":"test21"
 }
 {
 	"cmd":"get_initial_massage"

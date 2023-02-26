@@ -332,7 +332,6 @@ invalid:;
 		cJSON_free(cjson);
 		free(json_str);
 		throw INVALID_RESULT_EXCEPTION;
-
 	}
 	//end state
 end:;
